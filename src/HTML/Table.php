@@ -40,6 +40,20 @@ class Table
     protected $thead = [];
 
     /**
+     * tfoot parts
+     *
+     * @var array $tfoot
+     */
+    protected $tfoot = [];
+
+    /**
+     * tbody parts
+     *
+     * @var array $tbody
+     */
+    protected $tbody = [];
+
+    /**
      * tr parts
      *
      * @var array $tr
@@ -137,19 +151,34 @@ class Table
         $this->node_id++;
     }
 
-    /**
-     * tbody getter
-     *
-     * @return string
-     */
-    protected function getTbody()
+    protected function getTableStructure($structure = 'tbody')
     {
         $html = null;
+        $structureLines = [];
 
-        // add tr(s)
-        foreach($this->tr as $tr) {
-            // add tr and close tr
-            $html .= "{$tr}</tr>" . static::EOF_LINE;
+        switch($structure) {
+            case 'thead':
+                $structureLines = $this->thead;
+                break;
+            case 'tfoot':
+                $structureLines = $this->tfoot;
+                break;
+            case 'tbody':
+                $structureLines = $this->tbody;
+                break;
+            default:
+                throw new Exception("This HTML Table structure doesn't exists", 1);
+        }
+
+        if (false === empty($structureLines)) {
+            $html .= "<{$structure}>" . static::EOF_LINE;
+            // add lines
+            foreach($structureLines as $frame) {
+                // add a structure and close that
+                $html .= "{$frame}</tr>" . static::EOF_LINE;
+            }
+
+            $html .= "</{$structure}>" . static::EOF_LINE;
         }
 
         return $html;
@@ -162,15 +191,46 @@ class Table
      */
     protected function getThead()
     {
-        $html = null;
+        return $this->getTableStructure('thead');
+    }
 
-        // add thead(s)
-        foreach($this->thead as $thead) {
-            // add thead and close thead
-            $html .= "{$thead}</thead>" . static::EOF_LINE;
-        }
+    /**
+     * tfoot getter
+     *
+     * @return string
+     */
+    protected function getTfoot()
+    {
+        return $this->getTableStructure('tfoot');
+    }
 
-        return $html;
+    /**
+     * tbody getter
+     *
+     * @return string
+     */
+    protected function getTbody()
+    {
+        return $this->getTableStructure();
+    }
+
+    /**
+     * Table structure setter
+     *
+     * @param string $class
+     * @param string $attibutes
+     * @return Table
+     */
+    protected function mountTableStructure($structure, $class = null, $attributes = null)
+    {
+        // set new node ID
+        $this->setNodeId();
+
+        // add structure
+        $this->$structure[$this->getNodeId()] = "<tr{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
+            . static::EOF_LINE;
+
+        return $this;
     }
 
 
@@ -196,7 +256,7 @@ class Table
     public function td($text = null, $class = null, $attributes = null)
     {
         // add td to current tr
-        $this->tr[$this->getNodeId()] .= "<td{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
+        $this->tbody[$this->getNodeId()] .= "<td{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
             . "{$text}</td>" . static::EOF_LINE;
 
         return $this;
@@ -220,6 +280,23 @@ class Table
     }
 
     /**
+     * Table tf setter
+     *
+     * @param mixed $text
+     * @param string $class
+     * @param string $attibutes
+     * @return Table
+     */
+    public function tf($text = null, $class = null, $attributes = null)
+    {
+        // add th to current thead
+        $this->tfoot[$this->getNodeId()] .= "<th{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
+            . "{$text}</th>" . static::EOF_LINE;
+
+        return $this;
+    }
+
+    /**
      * Table thead setter
      *
      * @param string $class
@@ -228,14 +305,31 @@ class Table
      */
     public function thead($class = null, $attributes = null)
     {
-        // set new node ID
-        $this->setNodeId();
+        return $this->mountTableStructure('thead', $class, $attributes);
+    }
 
-        // add thead
-        $this->thead[$this->getNodeId()] = "<thead{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
-            . static::EOF_LINE;
+    /**
+     * Table tfoot setter
+     *
+     * @param string $class
+     * @param string $attibutes
+     * @return Table
+     */
+    public function tfoot($class = null, $attributes = null)
+    {
+        return $this->mountTableStructure('tfoot', $class, $attributes);
+    }
 
-        return $this;
+    /**
+     * Table tbody setter
+     *
+     * @param string $class
+     * @param string $attibutes
+     * @return Table
+     */
+    public function tbody($class = null, $attributes = null)
+    {
+        return $this->mountTableStructure('tbody', $class, $attributes);
     }
 
     /**
@@ -277,7 +371,7 @@ class Table
             . " cellpadding=\"{$this->cellpadding}\" cellspacing=\"{$this->cellspacing}\">" . static::EOF_LINE
 
             // add table thead and tbody
-            . $this->getThead() . $this->getTbody()
+            . $this->getThead(). $this->getTfoot() . $this->getTbody()
 
             // add table HTML
             . $this->table
