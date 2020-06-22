@@ -2,6 +2,8 @@
 
 namespace Helper\HTML;
 
+use Exception;
+
 /**
  * Generates HTML Tables
  * 
@@ -54,11 +56,18 @@ class Table
     protected $tbody = [];
 
     /**
-     * tr parts
-     *
-     * @var array $tr
+     * latest strucuture called to mount table
+     * 
+     * @var string $latestStructure
      */
-    protected $tr = [];
+    protected $latestStructure = 'tbody';
+
+    protected $theadAttributes;
+    protected $theadClass;
+    protected $tfootAttributes;
+    protected $tfootClass;
+    protected $tbodyAttributes;
+    protected $tbodyClass;
 
 
     /**
@@ -172,6 +181,7 @@ class Table
 
         if (false === empty($structureLines)) {
             $html .= "<{$structure}>" . static::EOF_LINE;
+            // $html .= "<{$structure}{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>" . static::EOF_LINE;
             // add lines
             foreach($structureLines as $frame) {
                 // add a structure and close that
@@ -221,10 +231,11 @@ class Table
      * @param string $attibutes
      * @return Table
      */
-    protected function mountTableStructure($structure, $class = null, $attributes = null)
+    protected function mountTableStructure($class = null, $attributes = null)
     {
         // set new node ID
         $this->setNodeId();
+        $structure = $this->latestStructure;
 
         // add structure
         $this->$structure[$this->getNodeId()] = "<tr{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
@@ -255,8 +266,13 @@ class Table
      */
     public function td($text = null, $class = null, $attributes = null)
     {
+        if ('tbody' !== $this->latestStructure) {
+            throw new Exception("This structure depends on TBODY.", 3);
+        }
+
+        $structure = &$this->{$this->latestStructure};
         // add td to current tr
-        $this->tbody[$this->getNodeId()] .= "<td{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
+        $structure[$this->getNodeId()] .= "<td{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
             . "{$text}</td>" . static::EOF_LINE;
 
         return $this;
@@ -272,25 +288,13 @@ class Table
      */
     public function th($text = null, $class = null, $attributes = null)
     {
-        // add th to current thead
-        $this->thead[$this->getNodeId()] .= "<th{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
-            . "{$text}</th>" . static::EOF_LINE;
+        if ('thead' !== $this->latestStructure && 'tfoot' !== $this->latestStructure) {
+            throw new Exception("This structure depends on THEAD or TFOOT.", 2);            
+        }
 
-        return $this;
-    }
-
-    /**
-     * Table tf setter
-     *
-     * @param mixed $text
-     * @param string $class
-     * @param string $attibutes
-     * @return Table
-     */
-    public function tf($text = null, $class = null, $attributes = null)
-    {
-        // add th to current thead
-        $this->tfoot[$this->getNodeId()] .= "<th{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
+        $structure = &$this->{$this->latestStructure};
+        // add th to current element
+        $structure[$this->getNodeId()] .= "<th{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
             . "{$text}</th>" . static::EOF_LINE;
 
         return $this;
@@ -305,7 +309,10 @@ class Table
      */
     public function thead($class = null, $attributes = null)
     {
-        return $this->mountTableStructure('thead', $class, $attributes);
+        $this->latestStructure = 'thead';
+        $this->theadAttributes = $attributes;
+        $this->theadClass      = $class;
+        return $this->tr();
     }
 
     /**
@@ -317,7 +324,10 @@ class Table
      */
     public function tfoot($class = null, $attributes = null)
     {
-        return $this->mountTableStructure('tfoot', $class, $attributes);
+        $this->latestStructure = 'tfoot';
+        $this->tfootClass      = $class;
+        $this->tfootAttributes = $attributes;
+        return $this->tr();
     }
 
     /**
@@ -329,7 +339,10 @@ class Table
      */
     public function tbody($class = null, $attributes = null)
     {
-        return $this->mountTableStructure('tbody', $class, $attributes);
+        $this->latestStructure = 'tbody';
+        $this->tbodyClass      = $class;
+        $this->tbodyAttributes = $attributes;
+        return $this->tr();
     }
 
     /**
@@ -341,14 +354,20 @@ class Table
      */
     public function tr($class = null, $attributes = null)
     {
-        // set new node ID
-        $this->setNodeId();
+        if (true === empty($this->latestStructure)) {
+            $this->latestStructure = 'tbody';
+        }
 
-        // add tr
-        $this->tr[$this->getNodeId()] = "<tr{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>"
-            . static::EOF_LINE;
+        $structure = $this->latestStructure;
+        if (
+            false === empty($this->getNodeId()) && 
+            true === array_key_exists($this->getNodeId(), $this->$structure) &&
+            '<tr>' === trim($this->$structure[$this->getNodeId()])
+        ) {
+            return $this;
+        }
 
-        return $this;
+        return $this->mountTableStructure($class, $attributes);
     }
 
     /**
