@@ -1,0 +1,28 @@
+{
+    "name": "erickmajor/helper-html",
+    "description": "This package contains helpers to mount HTML structures using PHP.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Erick Major dos Santos",
+            "email": "erick.major@yahoo.com.br",
+            "homepage": "http://erickmajor.github.io",
+            "role": "Owner"
+        },
+        {
+            "name": "Shay Anderson",
+            "homepage": "https://www.shayanderson.com",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Helper\\HTML\\": "src/HTML/"
+        }
+    }
+}
