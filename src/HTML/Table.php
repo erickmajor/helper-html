@@ -6,9 +6,9 @@ use Exception;
 
 /**
  * Generates HTML Tables
- * 
+ *
  * @package Helper\HTML
- * 
+ *
  * Based on STable\STable
  * @see PHP HTML Table Class {@link https://www.shayanderson.com/php/php-html-table-class.htm}
  */
@@ -57,7 +57,7 @@ class Table
 
     /**
      * latest strucuture called to mount table
-     * 
+     *
      * @var string $latestStructure
      */
     protected $latestStructure = 'tbody';
@@ -160,6 +160,28 @@ class Table
         $this->node_id++;
     }
 
+    protected function setAttributes(string $structure, $class = null, $attributes = null)
+    {
+        $classProprerty      = "{$structure}Class";
+        $attributesProprerty = "{$structure}Attributes";
+
+        if (false === empty($attributes)) {
+            $this->{$attributesProprerty} .= $attributes;
+        }
+
+        if (false === empty($class)) {
+            $this->{$classProprerty} .= $class;
+        }
+    }
+
+    protected function getAttributes(string $structure):array
+    {
+        $classProprerty      = "{$structure}Class";
+        $attributesProprerty = "{$structure}Attributes";
+
+        return [$this->{$classProprerty}, $this->{$attributesProprerty}, ];
+    }
+
     protected function getTableStructure($structure = 'tbody')
     {
         $html = null;
@@ -180,8 +202,9 @@ class Table
         }
 
         if (false === empty($structureLines)) {
-            $html .= "<{$structure}>" . static::EOF_LINE;
-            // $html .= "<{$structure}{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>" . static::EOF_LINE;
+            list($class, $attributes) = $this->getAttributes($structure);
+            $html .= "<{$structure}{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>";
+            $html .= static::EOF_LINE;
             // add lines
             foreach($structureLines as $frame) {
                 // add a structure and close that
@@ -289,7 +312,7 @@ class Table
     public function th($text = null, $class = null, $attributes = null)
     {
         if ('thead' !== $this->latestStructure && 'tfoot' !== $this->latestStructure) {
-            throw new Exception("This structure depends on THEAD or TFOOT.", 2);            
+            throw new Exception("This structure depends on THEAD or TFOOT.", 2);
         }
 
         $structure = &$this->{$this->latestStructure};
@@ -310,8 +333,8 @@ class Table
     public function thead($class = null, $attributes = null)
     {
         $this->latestStructure = 'thead';
-        $this->theadAttributes = $attributes;
-        $this->theadClass      = $class;
+        $this->setAttributes($this->latestStructure, $class, $attributes);
+
         return $this->tr();
     }
 
@@ -325,8 +348,8 @@ class Table
     public function tfoot($class = null, $attributes = null)
     {
         $this->latestStructure = 'tfoot';
-        $this->tfootClass      = $class;
-        $this->tfootAttributes = $attributes;
+        $this->setAttributes($this->latestStructure, $class, $attributes);
+
         return $this->tr();
     }
 
@@ -340,8 +363,8 @@ class Table
     public function tbody($class = null, $attributes = null)
     {
         $this->latestStructure = 'tbody';
-        $this->tbodyClass      = $class;
-        $this->tbodyAttributes = $attributes;
+        $this->setAttributes($this->latestStructure, $class, $attributes);
+
         return $this->tr();
     }
 
@@ -360,10 +383,11 @@ class Table
 
         $structure = $this->latestStructure;
         if (
-            false === empty($this->getNodeId()) && 
-            true === array_key_exists($this->getNodeId(), $this->$structure) &&
-            '<tr>' === trim($this->$structure[$this->getNodeId()])
+            false === empty($this->getNodeId()) &&
+            true === array_key_exists($this->getNodeId(), $this->{$structure}) &&
+            '<tr>' === trim($this->{$structure}[$this->getNodeId()])
         ) {
+            $this->{$structure}[$this->getNodeId()] = "<tr{$this->formatAttributeClass($class)}{$this->formatAttributes($attributes)}>" . static::EOF_LINE;
             return $this;
         }
 
